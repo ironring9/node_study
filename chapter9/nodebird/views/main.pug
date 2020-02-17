@@ -24,8 +24,19 @@ block content
           input.twit-id(type='hidden' value=twit.id)
           .twit-author= twit.user.nick
           -const follow = user && user.Followings.map(f => f.id).includes(twit.user.id);
-          if user && user.id !== twit.user.id && !follow
-            button.twit-follow 팔로우하기
+          if user && user.id !== twit.user.id
+            if !follow
+              button.twit-follow 팔로우하기
+            if twit.Liker 
+              -const like = twit.Liker.map(l => l.id).includes(user.id);
+              if like
+                button.twit-unlike 좋아요 취소
+              else
+                button.twit-like 좋아요
+            else
+              button.twit-like 좋아요
+          else if user && user.id === twit.user.id
+            button.twit-delete 삭제
           .twit-content= twit.content
           if twit.img
             .twit-img
@@ -73,4 +84,70 @@ block content
           }
         }
       });
+    });
+    document.querySelectorAll('.twit-like').forEach(function (tag) {
+      tag.addEventListener('click', function () {
+        var isLoggedIn = document.querySelector('#my-id');
+        if (isLoggedIn) {
+          var userId = tag.parentNode.querySelector('.twit-user-id').value;
+          var myId = isLoggedIn.value;
+          if (userId !== myId) {
+            var twitId = tag.parentNode.querySelector('.twit-id').value;
+            var xhr = new XMLHttpRequest();
+            xhr.onload = function () {
+              if (xhr.status === 200) {
+                location.reload();
+              } else {
+                console.error(xhr.responseText);
+              }
+            };
+            xhr.open('POST', '/post/' + twitId + '/like');
+            xhr.send();
+          }
+        }
+      })
+    });
+    document.querySelectorAll('.twit-unlike').forEach(function (tag) {
+      tag.addEventListener('click', function () {
+        var isLoggedIn = document.querySelector('#my-id');
+        if (isLoggedIn) {
+          var userId = tag.parentNode.querySelector('.twit-user-id').value;
+          var myId = isLoggedIn.value;
+          if (userId !== myId) {
+            var twitId = tag.parentNode.querySelector('.twit-id').value;
+            var xhr = new XMLHttpRequest();
+            xhr.onload = function () {
+              if (xhr.status === 200) {
+                location.reload();
+              } else {
+                console.error(xhr.responseText);
+              }
+            };
+            xhr.open('POST', '/post/' + twitId + '/unlike');
+            xhr.send();
+          }
+        }
+      })
+    });
+    document.querySelectorAll('.twit-delete').forEach(function (tag) {
+      tag.addEventListener('click', function () {
+        var isLoggedIn = document.querySelector('#my-id');
+        if (isLoggedIn) {
+          var userId = tag.parentNode.querySelector('.twit-user-id').value;
+          var myId = isLoggedIn.value;
+          if (userId === myId) {
+            var twitId = tag.parentNode.querySelector('.twit-id').value;
+            var xhr = new XMLHttpRequest();
+            xhr.onload = function () {
+              if (xhr.status === 200) {
+                location.reload();
+              } else {
+                console.error(xhr.responseText);
+              }
+            };
+            xhr.open('POST', '/post/' + twitId + '/delete');
+            xhr.send();
+          }
+        }
+      })
     });

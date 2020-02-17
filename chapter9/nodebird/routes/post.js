@@ -74,6 +74,38 @@ router.get('/hashtag', async (req, res, next) => {
         console.error(error);
         return next(error);
     }
-})
+});
+
+router.post('/:twitId/like', isLoggedIn, async (req, res, next) => {
+    try {
+        const user = await User.findOne({ where: { id: req.user.id }});
+        await user.addLikee(parseInt(req.params.twitId, 10));
+        res.send('success');
+    } catch (error) {
+        console.error(error);
+        next(error);
+    }
+});
+
+router.post('/:twitId/unlike', isLoggedIn, async (req, res, next) => {
+    try {
+        const user = await User.findOne({ where: { id: req.user.id }});
+        await user.removeLikee(parseInt(req.params.twitId, 10));
+        res.send('success');
+    } catch (error) {
+        console.error(error);
+        next(error);
+    }
+});
+
+router.post('/:id/delete', isLoggedIn, async (req, res, next) => {
+    try {
+        await Post.destroy({ where: { id: req.params.id } });
+        res.send('success');
+    } catch (error) {
+        console.error(error);
+        next(error);
+    }
+});
 
 module.exports = router;
