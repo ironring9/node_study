@@ -60,7 +60,8 @@ router.get('/room/:id', async (req, res, next) => {
             room,
             title: room.title,
             chats,
-            user: req.session.color
+            user: req.session.color,
+            number: rooms && rooms[req.params.id] && (rooms[req.params.id].length || 0) + 1
         });
     } catch (error) {
         console.error(error);
@@ -87,9 +88,11 @@ router.post('/room/:id/chat', async (req, res, next) => {
         const chat = new Chat({
             room: req.params.id,
             user: req.session.color,
-            chat: req.body.chat
+            chat: req.body.chat,
+            sid: req.body.sid
         });
         await chat.save();
+        
         req.app.get('io').of('/chat').to(req.params.id).emit('chat', chat);
         res.send('ok');
     } catch (error) {
@@ -98,7 +101,44 @@ router.post('/room/:id/chat', async (req, res, next) => {
     }
 });
 
-false.readdir('uploads', (error) => {
+router.post('/room/:id/sys', async (req, res, next) => {
+    try {
+        const io = req.app.get('io');
+        const chat = req.body.type === 'join' ? `${req.session.color}님이 입장하셨습니다.` : `${req.session.color}님이 퇴장하셨습니다.`;
+        const room = io.of('/chat').adapter.rooms[req.params.id]
+        const sys = new Chat({
+            room: req.params.id,
+            user: 'system',
+            chat: chat
+        });
+        await sys.save();
+        io.of('/chat').to(req.params.id).emit(req.body.type, {
+                user: 'system',
+                chat: sys.chat,
+                number: room.length
+            });
+        res.send('ok');
+    } catch (error) {
+        console.error(error);
+        next(error);
+    }
+});
+
+router.post('/room/:id/delegate', async (req, res, next) => {
+    try {
+        await Room.update({ _id: req.params.id }, { owner: req.body.owner });
+        const room = Room.find({ _id: req.params.id });
+        req.app.get('io').of('/chat').to(req.params.id).emit('delegate', {
+            owner: req.body.owner
+        });
+        res.send(room);
+    } catch (error) {
+        console.error(error);
+        next(error);
+    }
+});
+
+fs.readdir('uploads', (error) => {
     if (error) {
         console.error('uploads 폴더가 없어 uploads 폴더를 생성합니다.');
         fs.mkdirSync('uploads');

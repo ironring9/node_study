@@ -13,6 +13,7 @@ const chatSchema = new Schema({
         required: true
     },
     chat: String,
+    sid: String,
     gif: String,
     createdAt: {
         type: Date,

@@ -3,6 +3,10 @@ extends layout
 block content
   h1= title
   a#exit-btn(href='/') 방 나가기
+  #number
+    | 참여자 수 : 
+    span#number-count= number
+  #owner= '방장 : ' + room.owner
   fieldset
     legend 채팅 내용
     #chat-list
@@ -35,6 +39,7 @@ block content
       path: '/socket.io'
     });
     socket.on('join', function (data) {
+      document.querySelector('#number-count').textContent = data.number;
       var div = document.createElement('div');
       div.classList.add('system');
       var chat = document.createElement('div');
@@ -43,12 +48,25 @@ block content
       document.querySelector('#chat-list').appendChild(div);
     });
     socket.on('exit', function (data) {
+      document.querySelector('#number-count').textContent = data.number;
       var div = document.createElement('div');
       div.classList.add('system');
       var chat = document.createElement('div');
       div.textContent = data.chat;
       div.appendChild(chat);
       document.querySelector('#chat-list').appendChild(div);
+    });
+    socket.on('dm', function (data) {
+      alert(`${data.from}님으로부터 메시지가 도착했습니다.:` + data.dm)
+    });
+    socket.on('ban', function (data) {
+      alert('강퇴당했습니다.');
+      location.href = '/';
+    });
+    socket.on('delegate', function (data) {
+      debugger;
+      var owner = document.querySelector('#owner');
+      owner.textContent = '방장 : #{user}';
     });
     socket.on('chat', function (data) {
       var div = document.createElement('div');
@@ -60,6 +78,32 @@ block content
       var name = document.createElement('div');
       name.textContent = data.user;
       div.appendChild(name);
+
+      if (data.user !== '#{user}') { 
+        var dm = document.createElement('button');
+        dm.classList.add('dm');
+        dm.textContent = '귓속말';
+        dm.dataset.socket = data.sid;
+        dm.addEventListener('click', sendDm);
+        div.appendChild(dm);
+      }
+
+      if (data.user !== '#{room.owner}' && '#{user}' === '#{room.owner}') {
+        var ban = document.createElement('button');
+        ban.classList.add('ban');
+        ban.textContent = '강퇴';
+        ban.dataset.socket = data.sid;
+        ban.addEventListener('click', doBan);
+        div.appendChild(ban);
+
+        var delegate = document.createElement('button');
+        delegate.classList.add('delegate');
+        delegate.textContent = '방장 넘기기';
+        delegate.dataset.id = data.user;
+        delegate.addEventListener('click', doDelegate);
+        div.appendChild(delegate);
+      }
+
       if (data.chat) {
         var chat = document.createElement('div');
         chat.textContent = data.chat;
@@ -83,9 +127,10 @@ block content
             console.error(xhr.responseText);
           }
         };
+
         xhr.open('POST', '/room/#{room._id}/chat');
         xhr.setRequestHeader('Content-Type', 'application/json');
-        xhr.send(JSON.stringify({ chat: this.chat.value }));
+        xhr.send(JSON.stringify({ chat: this.chat.value, sid: socket.id }));
       }
     });
     document.querySelector('#gif').addEventListener('change', function (e) {
@@ -103,3 +148,26 @@ block content
       xhr.open('POST', '/room/#{room._id}/gif');
       xhr.send(formData);
     });
+    function sendDm(e) {
+      var msg = prompt('귓속말을 보냅니다.');
+      socket.emit('dm', {
+        id: e.target.dataset.socket,
+        dm: msg,
+        from: '#{user}'
+      })
+    }
+
+    function doBan(e) {
+      socket.emit('ban', {
+        id: e.target.dataset.socket
+      });
+    }
+
+    function doDelegate(e) {
+      var owner = document.querySelector('#owner');
+      owner.textContent = '방장 : ' + e.target.dataset.id;
+
+      socket.emit('delegate', {
+        id: e.target.dataset.id
+      });
+    }
