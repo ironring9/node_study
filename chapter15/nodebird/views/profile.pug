@@ -1,0 +1,74 @@
+extends layout
+
+block content
+  .my-profile
+    form#profile-form(action='/user/update' method='post' enctype='multipart/form-data')
+      .profile-header
+        h2 내 프로필
+      .profile-contents
+        input#profile-id(name='profileId' type='hidden' value=user.id)
+        input#profile-nick(name='profileNick' type='text' value=user.nick)
+      .profile-footer
+        button#profile-update(type='submit') 변경
+  .timeline
+    .followings.half
+      h2 팔로잉 목록
+      if user.Followings
+        for following in user.Followings
+          div
+            label#following= following.nick
+            input.following-id(type='hidden' value=following.id)
+            button.hangup-following 팔로잉 끊기
+    .followers.half
+      h2 팔로워 목록
+      if user.Followers
+        for follower in user.Followers
+          div
+            label#follower= follower.nick
+            input.follower-id(type='hidden' value=follower.id)
+            button.hangup-follower 팔로워 끊기
+  script.
+    document.querySelectorAll('.hangup-following').forEach(function (tag) {
+      tag.addEventListener('click', function () {
+        var isLoggedIn = document.querySelector('#my-id');
+        if (isLoggedIn) {
+          var followingId = tag.parentNode.querySelector('.following-id').value;
+          var myId = isLoggedIn.value;
+          var param = myId + '|' + followingId;
+          if (confirm('팔로잉을 끊겠습니까?')) {
+            var xhr = new XMLHttpRequest();
+            xhr.onload = function () {
+              if (xhr.status === 200) {
+                location.reload();
+              } else {
+                console.error(xhr.reponseText);
+              }
+            };
+            xhr.open('POST', '/user/' + param + '/hangupFollowing');
+            xhr.send();
+          }
+        }
+      });
+    });
+    document.querySelectorAll('.hangup-follower').forEach(function (tag) {
+      tag.addEventListener('click', function () {
+        var isLoggedIn = document.querySelector('#my-id');
+        if (isLoggedIn) {
+          var followerId = tag.parentNode.querySelector('.follower-id').value;
+          var myId = isLoggedIn.value;
+          var param = myId + '|' + followerId;
+          if (confirm('팔로워를 끊겠습니까?')) {
+            var xhr = new XMLHttpRequest();
+            xhr.onload = function () {
+              if (xhr.status === 200) {
+                location.reload();
+              } else {
+                console.error(xhr.reponseText);
+              }
+            };
+            xhr.open('POST', '/user/' + param + '/hangupFollower');
+            xhr.send();
+          }
+        }
+      });
+    });
